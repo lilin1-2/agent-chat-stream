@@ -15,8 +15,27 @@ from fastapi.responses import StreamingResponse, JSONResponse
 from pydantic import BaseModel, Field
 import requests
 import json
+import logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[logging.FileHandler("app.log", encoding="utf-8"), logging.StreamHandler()],
+)
+logger = logging.getLogger(__name__)
 
-from config import API_KEY, DEEPSEEK_URL
+from dotenv import load_dotenv
+load_dotenv()
+
+API_KEY = os.getenv("API_KEY")
+DEEPSEEK_URL = os.getenv("DEEPSEEK_URL")
+from fastapi import Depends
+
+# API 认证
+def verify_api_key(x_api_key: str = None):
+    if not x_api_key or x_api_key != API_KEY:
+        raise HTTPException(status_code=401, detail="API Key 无效或缺失")
+    return True
+
 from session_store import (
     create_session, get_all_sessions, delete_session,
     get_history, add_message, get_message_count,
@@ -148,7 +167,13 @@ def generate_summary(session_id: str):
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "sessions": len(get_all_sessions())}
+    try:
+        import requests as _r
+        _r.get(DEEPSEEK_URL.replace("/chat/completions", ""), timeout=5)
+        api_status = "connected"
+    except:
+        api_status = "unreachable"
+    return {"status": "ok", "api": api_status, "sessions": len(get_all_sessions())}
 
 
 @app.post("/session/create")
@@ -183,7 +208,7 @@ def session_history(session_id: str):
     }
 
 
-@app.post("/chat", response_model=ChatResponse)
+@app.post("/chat", response_model=ChatResponse, dependencies=[Depends(verify_api_key)])
 def chat(req: ChatRequest):
     messages = build_messages(req.session_id, req.message)
     try:
@@ -204,7 +229,7 @@ def chat(req: ChatRequest):
     return ChatResponse(reply=reply, session_id=req.session_id, message_count=get_message_count(req.session_id))
 
 
-@app.post("/chat/stream")
+@app.post("/chat/stream", dependencies=[Depends(verify_api_key)])
 async def chat_stream(req: ChatRequest):
     messages = build_messages(req.session_id, req.message)
 
