@@ -10,12 +10,13 @@ Agent 流式对话服务 —— 多轮对话 + Session 隔离 + SSE 流式 + Sum
   POST /chat                  非流式对话
   POST /chat/stream           SSE 流式对话
 """
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import requests
 import json
+import os
 import logging
 logging.basicConfig(
     level=logging.INFO,
@@ -29,7 +30,6 @@ load_dotenv()
 
 API_KEY = os.getenv("API_KEY")
 DEEPSEEK_URL = os.getenv("DEEPSEEK_URL")
-from fastapi import Depends
 
 # API 认证
 def verify_api_key(x_api_key: str = Header(None)):
