@@ -12,6 +12,7 @@ Agent 流式对话服务 —— 多轮对话 + Session 隔离 + SSE 流式 + Sum
 """
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import requests
 import json
@@ -48,6 +49,7 @@ app = FastAPI(
     version="1.0.0",
 )
 
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # ============================================================
 # 数据模型
@@ -160,6 +162,7 @@ def generate_summary(session_id: str):
     summary = call_llm(messages)
     save_summary(session_id, summary, len(history))
 
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # ============================================================
 # 接口
@@ -252,6 +255,7 @@ async def chat_stream(req: ChatRequest):
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
+app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # ============================================================
 # 入口
