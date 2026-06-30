@@ -162,7 +162,6 @@ def generate_summary(session_id: str):
     summary = call_llm(messages)
     save_summary(session_id, summary, len(history))
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # ============================================================
 # 接口
@@ -255,7 +254,6 @@ async def chat_stream(req: ChatRequest):
 
     return StreamingResponse(generate(), media_type="text/event-stream")
 
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
 
 # ============================================================
 # 入口
